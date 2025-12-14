@@ -1,0 +1,1297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Scraper</title>
+    <link rel="icon"
+        href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f0f1a;
+            --bg-secondary: #1a1a2e;
+            --bg-card: #252540;
+            --accent: #6366f1;
+            --accent-hover: #818cf8;
+            --text-primary: #fff;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+            --success: #22c55e;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+        }
+
+        /* Drawer */
+        .drawer {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 70px;
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            transition: width 0.2s ease;
+            z-index: 100;
+        }
+
+        .drawer.expanded {
+            width: 200px;
+        }
+
+        .drawer-toggle {
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+
+        .drawer-toggle:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .drawer-toggle.pinned {
+            background: var(--accent);
+            color: white;
+        }
+
+        .platform-btn {
+            width: 50px;
+            height: 50px;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 6px 0;
+            transition: all 0.2s;
+            font-size: 24px;
+        }
+
+        .drawer.expanded .platform-btn {
+            width: calc(100% - 24px);
+            justify-content: flex-start;
+            padding: 0 16px;
+            gap: 12px;
+        }
+
+        .platform-btn:hover {
+            background: var(--accent);
+            transform: scale(1.05);
+        }
+
+        .platform-btn.active {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .platform-label {
+            display: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .drawer.expanded .platform-label {
+            display: block;
+        }
+
+        /* Main Content */
+        .main {
+            margin-left: auto;
+            margin-right: auto;
+            padding: 30px 30px 30px 100px;
+            transition: all 0.2s;
+            max-width: 1200px;
+        }
+
+        .drawer.expanded~.main {
+            padding-left: 230px;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        /* Form */
+        .form-container {
+            background: var(--bg-card);
+            padding: 30px;
+            border-radius: 20px;
+            margin-bottom: 30px;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .form-row {
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .form-group input {
+            background: var(--bg-primary);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 16px;
+            outline: none;
+            transition: all 0.2s;
+            text-align: center;
+            height: 50px;
+        }
+
+        .form-group input#username {
+            width: 300px;
+            text-align: left;
+        }
+
+        .form-group input#page,
+        .form-group input#perPage {
+            width: 100px;
+        }
+
+        .form-group input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+
+        .btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0 32px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            height: 50px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Status */
+        .status {
+            padding: 16px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 14px;
+            display: none;
+            text-align: center;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .status.loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--accent);
+            color: var(--accent);
+        }
+
+        .status.error {
+            display: block;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--accent);
+            border-top-color: transparent;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Meta Info */
+        .meta-bar {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 16px;
+            background: var(--bg-card);
+            border-radius: 12px;
+            margin-bottom: 24px;
+            font-size: 13px;
+            border: 1px solid var(--border);
+        }
+
+        .meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .meta-item .label {
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .meta-item .value {
+            color: var(--text-primary);
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        /* Results Table */
+        .results-container {
+            background: var(--bg-card);
+            border-radius: 20px;
+            padding: 24px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 14px;
+        }
+
+        .results-table th {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 16px;
+            text-align: left;
+            font-weight: 700;
+            color: var(--text-secondary);
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .results-table th:nth-child(2),
+        .results-table th:nth-child(3) {
+            text-align: left;
+        }
+
+        .results-table td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+            text-align: center;
+        }
+
+        .results-table td:nth-child(2),
+        .results-table td:nth-child(3) {
+            text-align: left;
+        }
+
+        .results-table tr:hover {
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .thumb {
+            width: 48px;
+            height: 64px;
+            background: var(--bg-primary);
+            border-radius: 6px;
+            object-fit: cover;
+            border: 1px solid var(--border);
+        }
+
+        .caption {
+            max-width: 400px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            color: var(--text-primary);
+            font-weight: 500;
+        }
+
+        .stat {
+            font-family: 'Segoe UI Mono', monospace;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .stat.highlight {
+            color: var(--accent-hover);
+            font-weight: 700;
+        }
+
+        .link-btn {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: var(--accent);
+            text-decoration: none;
+            font-size: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+            display: inline-block;
+        }
+
+        .link-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .page-btn {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 20px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            display: flex;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+            font-weight: 500;
+            background: var(--bg-card);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        /* Empty state */
+        .empty {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-secondary);
+        }
+
+        .empty-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.3;
+        }
+
+        /* Toolbar */
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 10px;
+        }
+
+        .view-toggle {
+            display: flex;
+            background: var(--bg-card);
+            padding: 4px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .view-btn {
+            padding: 6px 16px;
+            border: none;
+            background: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .view-btn.active {
+            background: var(--accent);
+            color: white;
+            box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
+        }
+
+        .export-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .export-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* JSON View */
+        .json-view {
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            color: #d4d4d4;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            border: 1px solid var(--border);
+        }
+
+        .json-key {
+            color: #9cdcfe;
+        }
+
+        .json-string {
+            color: #ce9178;
+        }
+
+        .json-number {
+            color: #b5cea8;
+        }
+
+        .json-boolean {
+            color: #569cd6;
+        }
+
+        .json-null {
+            color: #569cd6;
+        }
+
+        .empty p {
+            font-size: 16px;
+        }
+
+        /* History Panel */
+        .history-btn {
+            margin-top: auto;
+            width: 50px;
+            height: 50px;
+            background: var(--bg-card);
+            border: 2px solid transparent;
+            border-radius: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            font-size: 20px;
+            color: var(--text-secondary);
+        }
+
+        .history-btn:hover {
+            background: var(--accent);
+            color: white;
+        }
+
+        .history-btn.active {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.2);
+        }
+
+        .history-panel {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 380px;
+            height: 100vh;
+            background: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            padding: 20px;
+            z-index: 200;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+        }
+
+        .history-panel.open {
+            right: 0;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .history-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .history-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .history-close:hover {
+            color: var(--error);
+        }
+
+        .history-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .history-item:hover {
+            border-color: var(--accent);
+            transform: translateX(-3px);
+        }
+
+        .history-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .history-platform {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--accent);
+        }
+
+        .history-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .history-username {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .history-stats {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 6px;
+        }
+
+        .history-delete {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .history-delete:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        .history-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .history-clear {
+            width: 100%;
+            padding: 10px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 12px;
+            margin-top: 15px;
+        }
+
+        .history-clear:hover {
+            border-color: var(--error);
+            color: var(--error);
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Drawer -->
+    <div class="drawer" id="drawer">
+        <button class="drawer-toggle" id="pinBtn" title="Pin Menu">📌</button>
+
+        <button class="platform-btn active" data-platform="tiktok" title="TikTok">
+            <span>🎵</span>
+            <span class="platform-label">TikTok</span>
+        </button>
+        <button class="platform-btn" data-platform="instagram" title="Instagram">
+            <span>📸</span>
+            <span class="platform-label">Instagram</span>
+        </button>
+        <button class="platform-btn" data-platform="youtube" title="YouTube">
+            <span>🎬</span>
+            <span class="platform-label">YouTube</span>
+        </button>
+        <button class="platform-btn" data-platform="twitter" title="Twitter/X">
+            <span>𝕏</span>
+            <span class="platform-label">Twitter/X</span>
+        </button>
+
+        <button class="history-btn" id="historyBtn" title="History">📜</button>
+    </div>
+
+    <!-- History Panel -->
+    <div class="history-panel" id="historyPanel">
+        <div class="history-header">
+            <h2>📜 History</h2>
+            <button class="history-close" id="historyClose">×</button>
+        </div>
+        <div id="historyList"></div>
+        <button class="history-clear" id="historyClear">🗑️ Clear All History</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main">
+        <div class="header">
+            <h1 id="pageTitle">🎵 TikTok</h1>
+        </div>
+
+        <!-- Form -->
+        <div class="form-container">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Username</label>
+                    <input type="text" id="username" placeholder="e.g. tiktok" value="">
+                </div>
+                <div class="form-group">
+                    <label>Page</label>
+                    <input type="number" id="page" value="1" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Per Page</label>
+                    <input type="number" id="perPage" value="10" min="1" max="100">
+                </div>
+                <button class="btn" id="fetchBtn">
+                    🔍 Fetch
+                </button>
+            </div>
+        </div>
+
+        <!-- Status -->
+        <div class="status" id="status">
+            <div class="spinner"></div>
+            <span id="statusText">Loading...</span>
+        </div>
+
+        <!-- Meta Bar -->
+        <div class="meta-bar" id="metaBar" style="display: none;">
+            <div class="meta-item">
+                <span class="label">User</span>
+                <span class="value" id="metaUser">-</span>
+            </div>
+            <div class="meta-item">
+                <span class="label">Page</span>
+                <span class="value" id="metaPage">-</span>
+            </div>
+            <div class="meta-item">
+                <span class="label">Total</span>
+                <span class="value" id="metaTotal">-</span>
+            </div>
+            <div class="meta-item">
+                <span class="label">Fetched</span>
+                <span class="value text-success" id="metaFetched">-</span>
+            </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar" id="toolbar" style="display: none;">
+            <div class="view-toggle">
+                <button class="view-btn active" id="btnViewCard">Card View</button>
+                <button class="view-btn" id="btnViewJson">JSON View</button>
+            </div>
+            <button class="export-btn" id="btnExport">
+                <span>⬇️</span> Export JSON
+            </button>
+        </div>
+
+        <!-- Results -->
+        <div id="resultsContainer">
+            <div class="empty">
+                <div class="empty-icon">✨</div>
+                <p>Enter a username to start fetching data</p>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <div class="pagination" id="pagination" style="display: none;">
+            <button class="page-btn" id="prevBtn">← Previous</button>
+            <span class="page-info" id="pageInfo">Page 1 of 1</span>
+            <button class="page-btn" id="nextBtn">Next →</button>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let currentPlatform = 'tiktok';
+        let currentData = null;
+        let isPinned = false;
+        let currentView = 'cards'; // 'cards' | 'json'
+
+        // Elements
+        const drawer = document.getElementById('drawer');
+        const pinBtn = document.getElementById('pinBtn');
+        const platformBtns = document.querySelectorAll('.platform-btn');
+        const pageTitle = document.getElementById('pageTitle');
+        const usernameInput = document.getElementById('username');
+        const pageInput = document.getElementById('page');
+        const perPageInput = document.getElementById('perPage');
+        const fetchBtn = document.getElementById('fetchBtn');
+        const status = document.getElementById('status');
+        const statusText = document.getElementById('statusText');
+        const metaBar = document.getElementById('metaBar');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const pagination = document.getElementById('pagination');
+
+        // Toolbar Elements
+        const toolbar = document.getElementById('toolbar');
+        const btnViewCard = document.getElementById('btnViewCard');
+        const btnViewJson = document.getElementById('btnViewJson');
+        const btnExport = document.getElementById('btnExport');
+
+        // Drawer hover
+        drawer.addEventListener('mouseenter', () => {
+            if (!isPinned) drawer.classList.add('expanded');
+        });
+        drawer.addEventListener('mouseleave', () => {
+            if (!isPinned) drawer.classList.remove('expanded');
+        });
+
+        // Pin toggle
+        pinBtn.addEventListener('click', () => {
+            isPinned = !isPinned;
+            pinBtn.classList.toggle('pinned', isPinned);
+            drawer.classList.toggle('expanded', isPinned);
+        });
+
+        // View Toggles
+        btnViewCard.addEventListener('click', () => {
+            currentView = 'cards';
+            btnViewCard.classList.add('active');
+            btnViewJson.classList.remove('active');
+            if (currentData) displayResults(currentData);
+        });
+
+        btnViewJson.addEventListener('click', () => {
+            currentView = 'json';
+            btnViewJson.classList.add('active');
+            btnViewCard.classList.remove('active');
+            if (currentData) displayResults(currentData);
+        });
+
+        // Export JSON
+        btnExport.addEventListener('click', () => {
+            if (!currentData || !currentData.data) return;
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(currentData, null, 2));
+            const downloadAnchorNode = document.createElement('a');
+            downloadAnchorNode.setAttribute("href", dataStr);
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            downloadAnchorNode.setAttribute("download", `${currentPlatform}_${usernameInput.value}_${timestamp}.json`);
+            document.body.appendChild(downloadAnchorNode); // required for firefox
+            downloadAnchorNode.click();
+            downloadAnchorNode.remove();
+        });
+
+        // Platform selection
+        platformBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                platformBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentPlatform = btn.dataset.platform;
+                const platformEmojis = { tiktok: '🎵', instagram: '📸', youtube: '🎬', twitter: '𝕏' };
+                const platformNames = { tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube', twitter: 'Twitter' };
+                pageTitle.textContent = `${platformEmojis[currentPlatform]} ${platformNames[currentPlatform]}`;
+
+                // Clear results
+                resultsContainer.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">✨</div>
+                        <p>Enter a ${currentPlatform} username</p>
+                    </div>
+                `;
+                metaBar.style.display = 'none';
+                pagination.style.display = 'none';
+                toolbar.style.display = 'none';
+                currentData = null;
+            });
+        });
+
+        // Fetch data
+        fetchBtn.addEventListener('click', fetchData);
+        usernameInput.addEventListener('keypress', e => {
+            if (e.key === 'Enter') fetchData();
+        });
+
+        async function fetchData() {
+            const username = usernameInput.value.trim().replace('@', '');
+            const page = parseInt(pageInput.value) || 1;
+            const perPage = parseInt(perPageInput.value) || 10;
+
+            if (!username) {
+                showError('Please enter a username');
+                return;
+            }
+
+            showLoading('Fetching data from ' + currentPlatform + '...');
+            fetchBtn.disabled = true;
+
+            try {
+                const endpoint = currentPlatform === 'tiktok'
+                    ? `/api/tiktok?username=${username}&page=${page}&per-page=${perPage}`
+                    : `/api/${currentPlatform}?username=${username}&page=${page}&per-page=${perPage}`;
+
+                const response = await fetch(endpoint);
+                const data = await response.json();
+
+                if (data.status === 'error') {
+                    throw new Error(data.error || 'Failed to fetch data');
+                }
+
+                currentData = data;
+                displayResults(data);
+                saveToHistory(data); // Save to history
+                hideStatus();
+
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                fetchBtn.disabled = false;
+            }
+        }
+
+        function showLoading(msg) {
+            status.className = 'status loading';
+            statusText.textContent = msg;
+            resultsContainer.style.opacity = '0.5';
+        }
+
+        function showError(msg) {
+            status.className = 'status error';
+            status.textContent = msg;
+            resultsContainer.style.opacity = '1';
+        }
+
+        function hideStatus() {
+            status.className = 'status';
+            resultsContainer.style.opacity = '1';
+        }
+
+        function formatNumber(num) {
+            if (!num) return '0';
+            if (num >= 1000000000) return (num / 1000000000).toFixed(1) + 'B';
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        function syntaxHighlight(json) {
+            if (typeof json != 'string') {
+                json = JSON.stringify(json, undefined, 2);
+            }
+            json = json.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            return json.replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, function (match) {
+                var cls = 'json-number';
+                if (/^"/.test(match)) {
+                    if (/:$/.test(match)) {
+                        cls = 'json-key';
+                    } else {
+                        cls = 'json-string';
+                    }
+                } else if (/true|false/.test(match)) {
+                    cls = 'json-boolean';
+                } else if (/null/.test(match)) {
+                    cls = 'json-null';
+                }
+                return '<span class="' + cls + '">' + match + '</span>';
+            });
+        }
+
+        function displayResults(data) {
+            const meta = data.meta;
+            const items = data.data || [];
+
+            // Update meta bar
+            if (meta) {
+                metaBar.style.display = 'flex';
+                // Show toolbar whenever we have valid response (even empty), so user can debug via JSON
+                toolbar.style.display = 'flex';
+                
+                document.getElementById('metaUser').textContent = '@' + (meta.username || '-');
+                document.getElementById('metaPage').textContent = `${meta.page || 1} / ${meta.total_pages || 1}`;
+                document.getElementById('metaTotal').textContent = meta.total_posts || 0;
+                document.getElementById('metaFetched').textContent = items.length;
+            }
+
+            // JSON View - Priority over empty check to allow debugging
+            if (currentView === 'json') {
+                const jsonHtml = syntaxHighlight(data);
+                resultsContainer.innerHTML = `<pre class="json-view">${jsonHtml}</pre>`;
+                pagination.style.display = 'none';
+                return;
+            }
+
+            // Empty state (only for Card View)
+            if (items.length === 0) {
+                resultsContainer.innerHTML = `
+                    <div class="empty">
+                        <div class="empty-icon">😕</div>
+                        <p>No results found</p>
+                    </div>
+                `;
+                pagination.style.display = 'none';
+                // toolbar.style.display = 'none'; // Keep toolbar visible
+                return;
+            }
+
+            // Card View (Table)
+            let html = `
+                <div class="results-container">
+                <table class="results-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Thumbnail</th>
+                            <th>Caption</th>
+                            <th>Views</th>
+                            <th>Likes</th>
+                            <th>Comments</th>
+                            <th>Link</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            items.forEach((item, idx) => {
+                const thumb = item.cover_image || '';
+                const caption = item.description || 'No caption';
+                const views = formatNumber(item.views || 0);
+                const likes = formatNumber(item.likes || 0);
+                const comments = formatNumber(item.comments || 0);
+                const url = item.url || '#';
+
+                html += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${thumb ? `<img src="${thumb}" class="thumb" onerror="this.style.display='none'">` : '-'}</td>
+                        <td class="caption" title="${caption}">${caption}</td>
+                        <td class="stat highlight">👁 ${views}</td>
+                        <td class="stat">❤️ ${likes}</td>
+                        <td class="stat">💬 ${comments}</td>
+                        <td><a href="${url}" target="_blank" class="link-btn">OPEN</a></td>
+                    </tr>
+                `;
+            });
+
+            html += '</tbody></table></div>';
+            resultsContainer.innerHTML = html;
+
+            // Pagination
+            if (meta && meta.total_pages > 1) {
+                pagination.style.display = 'flex';
+                document.getElementById('pageInfo').textContent = `Page ${meta.page} of ${meta.total_pages}`;
+                document.getElementById('prevBtn').disabled = meta.page <= 1;
+                document.getElementById('nextBtn').disabled = meta.page >= meta.total_pages;
+            } else {
+                pagination.style.display = 'none';
+            }
+        }
+
+        // Pagination handlers - use setTimeout to yield to browser (fix INP)
+        document.getElementById('prevBtn').addEventListener('click', () => {
+            const current = parseInt(pageInput.value) || 1;
+            if (current > 1) {
+                pageInput.value = current - 1;
+                // Yield to browser before async work
+                setTimeout(() => fetchData(), 0);
+            }
+        });
+
+        document.getElementById('nextBtn').addEventListener('click', () => {
+            const current = parseInt(pageInput.value) || 1;
+            pageInput.value = current + 1;
+            // Yield to browser before async work
+            setTimeout(() => fetchData(), 0);
+        });
+
+        // ============ HISTORY FUNCTIONALITY ============
+        const HISTORY_KEY = 'scrape_history';
+        const MAX_HISTORY = 20;
+        const historyBtn = document.getElementById('historyBtn');
+        const historyPanel = document.getElementById('historyPanel');
+        const historyClose = document.getElementById('historyClose');
+        const historyList = document.getElementById('historyList');
+        const historyClear = document.getElementById('historyClear');
+
+        // Toggle history panel
+        historyBtn.addEventListener('click', () => {
+            historyPanel.classList.toggle('open');
+            historyBtn.classList.toggle('active');
+            if (historyPanel.classList.contains('open')) {
+                renderHistory();
+            }
+        });
+
+        historyClose.addEventListener('click', () => {
+            historyPanel.classList.remove('open');
+            historyBtn.classList.remove('active');
+        });
+
+        // Get history from localStorage
+        function getHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(HISTORY_KEY)) || [];
+            } catch {
+                return [];
+            }
+        }
+
+        // Save to history
+        function saveToHistory(data) {
+            if (!data || !data.meta) return;
+
+            const history = getHistory();
+            const entry = {
+                id: Date.now(),
+                platform: currentPlatform,
+                username: data.meta.username || usernameInput.value,
+                totalPosts: data.meta.total_posts || data.data?.length || 0,
+                timestamp: new Date().toISOString(),
+                data: data
+            };
+
+            // Add to front, limit size
+            history.unshift(entry);
+            if (history.length > MAX_HISTORY) {
+                history.pop();
+            }
+
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+        }
+
+        // Render history list
+        function renderHistory() {
+            const history = getHistory();
+
+            if (history.length === 0) {
+                historyList.innerHTML = `
+                    <div class="history-empty">
+                        <p>📭 No history yet</p>
+                        <p style="font-size: 12px; margin-top: 8px;">Scrape some data to see it here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const platformEmojis = { tiktok: '🎵', instagram: '📸', youtube: '🎬', twitter: '𝕏' };
+
+            historyList.innerHTML = history.map(item => `
+                <div class="history-item" data-id="${item.id}">
+                    <div class="history-item-header">
+                        <span class="history-platform">${platformEmojis[item.platform] || '📊'} ${item.platform}</span>
+                        <div>
+                            <span class="history-time">${formatTimestamp(item.timestamp)}</span>
+                            <button class="history-delete" data-id="${item.id}" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                    <div class="history-username">@${item.username}</div>
+                    <div class="history-stats">${item.totalPosts} posts fetched</div>
+                </div>
+            `).join('');
+
+            // Add click handlers
+            historyList.querySelectorAll('.history-item').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    if (e.target.classList.contains('history-delete')) return;
+                    loadFromHistory(parseInt(el.dataset.id));
+                });
+            });
+
+            historyList.querySelectorAll('.history-delete').forEach(el => {
+                el.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    deleteFromHistory(parseInt(el.dataset.id));
+                });
+            });
+        }
+
+        // Load data from history
+        function loadFromHistory(id) {
+            const history = getHistory();
+            const item = history.find(h => h.id === id);
+
+            if (item && item.data) {
+                // Update platform
+                currentPlatform = item.platform;
+                platformBtns.forEach(btn => {
+                    btn.classList.toggle('active', btn.dataset.platform === item.platform);
+                });
+                const platformEmojis = { tiktok: '🎵', instagram: '📸', youtube: '🎬', twitter: '𝕏' };
+                const platformNames = { tiktok: 'TikTok', instagram: 'Instagram', youtube: 'YouTube', twitter: 'Twitter' };
+                pageTitle.textContent = `${platformEmojis[currentPlatform]} ${platformNames[currentPlatform]}`;
+
+                // Update form
+                usernameInput.value = item.username;
+
+                // Display results
+                currentData = item.data;
+                displayResults(item.data);
+                hideStatus();
+
+                // Close panel
+                historyPanel.classList.remove('open');
+                historyBtn.classList.remove('active');
+            }
+        }
+
+        // Delete from history
+        function deleteFromHistory(id) {
+            let history = getHistory();
+            history = history.filter(h => h.id !== id);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            renderHistory();
+        }
+
+        // Clear all history
+        historyClear.addEventListener('click', () => {
+            if (confirm('Clear all history?')) {
+                localStorage.removeItem(HISTORY_KEY);
+                renderHistory();
+            }
+        });
+
+        // Format timestamp
+        function formatTimestamp(iso) {
+            const date = new Date(iso);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffMins = Math.floor(diffMs / 60000);
+            const diffHours = Math.floor(diffMs / 3600000);
+            const diffDays = Math.floor(diffMs / 86400000);
+
+            if (diffMins < 1) return 'Just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            if (diffHours < 24) return `${diffHours}h ago`;
+            if (diffDays < 7) return `${diffDays}d ago`;
+            return date.toLocaleDateString();
+        }
+    </script>
+</body>
+
+</html>
