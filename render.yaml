@@ -2,6 +2,7 @@ services:
   - type: web
     name: social-scraper-free
     runtime: node
+    plan: free
     buildCommand: npm install
     startCommand: npm start
     envVars:
