@@ -1113,12 +1113,12 @@
             }
         }
 
-        // Pagination handlers - use setTimeout to yield to browser (fix INP)
+        // Pagination handlers - use setTimeout to yield to browser (improves INP)
         document.getElementById('prevBtn').addEventListener('click', () => {
             const current = parseInt(pageInput.value) || 1;
             if (current > 1) {
                 pageInput.value = current - 1;
-                // Yield to browser before async work
+                // Yield to browser before async work to improve Interaction to Next Paint
                 setTimeout(() => fetchData(), 0);
             }
         });
@@ -1126,7 +1126,7 @@
         document.getElementById('nextBtn').addEventListener('click', () => {
             const current = parseInt(pageInput.value) || 1;
             pageInput.value = current + 1;
-            // Yield to browser before async work
+            // Yield to browser before async work to improve Interaction to Next Paint
             setTimeout(() => fetchData(), 0);
         });
 
