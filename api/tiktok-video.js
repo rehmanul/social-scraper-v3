@@ -13,6 +13,11 @@ function normalizeTiktokUrl(link) {
     if (!link) return null;
     link = link.trim();
 
+    // If it's a numeric ID, construct the URL
+    if (/^\d+$/.test(link)) {
+        return `https://www.tiktok.com/@/video/${link}`;
+    }
+
     if (link.startsWith('http')) {
         return link;
     }
