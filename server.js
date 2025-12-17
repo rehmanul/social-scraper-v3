@@ -8,8 +8,10 @@ import { fileURLToPath } from 'url';
 
 // API handlers
 import tiktokHandler from './api/tiktok.js';
+import tiktokVideoHandler from './api/tiktok-video.js';
 import twitterHandler from './api/twitter.js';
 import youtubeHandler from './api/youtube.js';
+import youtubeVideoHandler from './api/youtube-video.js';
 import instagramHandler from './api/instagram.js';
 import statsHandler from './api/stats.js';
 
@@ -24,8 +26,10 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
+app.all('/api/tiktok/video', (req, res) => tiktokVideoHandler(req, res));
 app.all('/api/tiktok', (req, res) => tiktokHandler(req, res));
 app.all('/api/twitter', (req, res) => twitterHandler(req, res));
+app.all('/api/youtube/video', (req, res) => youtubeVideoHandler(req, res));
 app.all('/api/youtube', (req, res) => youtubeHandler(req, res));
 app.all('/api/instagram', (req, res) => instagramHandler(req, res));
 app.all('/api/stats', (req, res) => statsHandler(req, res));
